@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="certbot-dns-contabo-api",
-    version="1.0.1",
+    version="1.0.2",
     description="Contabo DNS Authenticator plugin for Certbot",
     author="Custom",
     license="Apache License 2.0",
