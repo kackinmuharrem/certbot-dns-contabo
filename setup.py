@@ -1,12 +1,17 @@
 from setuptools import setup, find_packages
 
+with open("README.md", "r", encoding="utf-8") as fh:
+    long_description = fh.read()
+
 setup(
     name="certbot-dns-contabo-api",
-    version="1.0.0",
+    version="1.0.1",
     description="Contabo DNS Authenticator plugin for Certbot",
     author="Custom",
     license="Apache License 2.0",
     python_requires=">=3.7",
+    long_description=long_description,
+    long_description_content_type="text/markdown",
     packages=find_packages(),
     install_requires=[
         "certbot>=1.0.0",

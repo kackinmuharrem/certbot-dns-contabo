@@ -8,9 +8,11 @@ DNS Authenticator plugin for Certbot that uses Contabo DNS API.
 # Install dependencies first
 apt install python3-pip -y
 
-# Install the plugin
-pip3 install /path/to/certbot-dns-contabo --break-system-packages
+# Install the plugin from PyPI
+pip3 install certbot-dns-contabo-api --break-system-packages
 ```
+
+Project URL: https://pypi.org/project/certbot-dns-contabo-api/
 
 ## Configuration
 
