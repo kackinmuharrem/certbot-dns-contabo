@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="certbot-dns-contabo",
+    name="certbot-dns-contabo-api",
     version="1.0.0",
     description="Contabo DNS Authenticator plugin for Certbot",
     author="Custom",
