@@ -167,18 +167,23 @@ class Authenticator(dns_common.DNSAuthenticator):
             # Find and delete matching TXT records
             if "data" in records_data:
                 for record in records_data["data"]:
-                    if (record.get("name") == record_name and 
+                    if (record.get("name") == f"{record_name}.{zone}" and 
                         record.get("type") == "TXT" and
                         record.get("data") == validation):
 
                         record_id = record.get("recordId")
+
+                        headers = self._get_headers()
+                        del headers["Content-Type"]
+
                         if record_id:
                             del_response = requests.delete(
                                 f"{CONTABO_API_URL}/dns/zones/{zone}/records/{record_id}",
-                                headers=self._get_headers(),
+                                headers=headers,
                                 timeout=30
                             )
                             del_response.raise_for_status()
+
                             logger.info(f"Successfully deleted TXT record for {validation_name}")
                             return
 
