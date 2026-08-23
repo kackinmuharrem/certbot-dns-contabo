@@ -28,11 +28,13 @@ From [Contabo Customer Control Panel](https://my.contabo.com/api/details), get:
 
 Create `/etc/letsencrypt/contabo.ini`:
 
+Enclose the api_password in quotation marks, especially if you are using special characters.
+
 ```ini
 dns_contabo_client_id = YOUR_CLIENT_ID
 dns_contabo_client_secret = YOUR_CLIENT_SECRET
 dns_contabo_api_user = your@email.com
-dns_contabo_api_password = YOUR_API_PASSWORD
+dns_contabo_api_password = 'YOUR_API_PASSWORD'
 ```
 
 Secure the file:

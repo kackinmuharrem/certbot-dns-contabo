@@ -3,6 +3,7 @@
 import logging
 import uuid
 import requests
+from urllib.parse import unquote
 
 from certbot import errors
 from certbot.plugins import dns_common
@@ -54,15 +55,15 @@ class Authenticator(dns_common.DNSAuthenticator):
         """Get OAuth2 access token from Contabo."""
         if self._token:
             return self._token
-            
+
         data = {
             "grant_type": "password",
             "client_id": self.credentials.conf("client_id"),
             "client_secret": self.credentials.conf("client_secret"),
-            "username": self.credentials.conf("api_user"),
-            "password": self.credentials.conf("api_password"),
+            "username": unquote(self.credentials.conf("api_user")),
+            "password": unquote(self.credentials.conf("api_password")),
         }
-        
+
         try:
             response = requests.post(CONTABO_AUTH_URL, data=data, timeout=30)
             response.raise_for_status()
@@ -84,7 +85,7 @@ class Authenticator(dns_common.DNSAuthenticator):
     def _find_zone(self, domain):
         """Find the DNS zone for a given domain."""
         headers = self._get_headers()
-        
+
         try:
             response = requests.get(
                 f"{CONTABO_API_URL}/dns/zones",
@@ -93,35 +94,35 @@ class Authenticator(dns_common.DNSAuthenticator):
             )
             response.raise_for_status()
             zones_data = response.json()
-            
+
             zones = []
             if "data" in zones_data:
                 zones = [z.get("zoneName") for z in zones_data["data"] if z.get("zoneName")]
-            
+
             # Find the best matching zone
             domain_parts = domain.rstrip('.').split('.')
             for i in range(len(domain_parts)):
                 potential_zone = '.'.join(domain_parts[i:])
                 if potential_zone in zones:
                     return potential_zone
-                    
+
             raise errors.PluginError(f"Could not find DNS zone for {domain}")
-            
+
         except requests.exceptions.RequestException as e:
             raise errors.PluginError(f"Error listing DNS zones: {e}")
 
     def _perform(self, domain, validation_name, validation):
         """Create a TXT record for the validation."""
         zone = self._find_zone(validation_name)
-        
+
         # Calculate the record name (subdomain part)
         if validation_name.rstrip('.').endswith(zone):
             record_name = validation_name.rstrip('.')[:-len(zone)-1]
         else:
             record_name = validation_name.rstrip('.')
-        
+
         headers = self._get_headers()
-        
+
         data = {
             "name": record_name,
             "type": "TXT",
@@ -129,7 +130,7 @@ class Authenticator(dns_common.DNSAuthenticator):
             "prio": 0,
             "data": validation,
         }
-        
+
         try:
             response = requests.post(
                 f"{CONTABO_API_URL}/dns/zones/{zone}/records",
@@ -146,14 +147,14 @@ class Authenticator(dns_common.DNSAuthenticator):
         """Delete the TXT record after validation."""
         try:
             zone = self._find_zone(validation_name)
-            
+
             if validation_name.rstrip('.').endswith(zone):
                 record_name = validation_name.rstrip('.')[:-len(zone)-1]
             else:
                 record_name = validation_name.rstrip('.')
-            
+
             headers = self._get_headers()
-            
+
             # List records to find the one to delete
             response = requests.get(
                 f"{CONTABO_API_URL}/dns/zones/{zone}/records",
@@ -162,26 +163,31 @@ class Authenticator(dns_common.DNSAuthenticator):
             )
             response.raise_for_status()
             records_data = response.json()
-            
+
             # Find and delete matching TXT records
             if "data" in records_data:
                 for record in records_data["data"]:
-                    if (record.get("name") == record_name and 
+                    if (record.get("name") == f"{record_name}.{zone}" and 
                         record.get("type") == "TXT" and
                         record.get("data") == validation):
-                        
+
                         record_id = record.get("recordId")
+
+                        headers = self._get_headers()
+                        del headers["Content-Type"]
+
                         if record_id:
                             del_response = requests.delete(
                                 f"{CONTABO_API_URL}/dns/zones/{zone}/records/{record_id}",
-                                headers=self._get_headers(),
+                                headers=headers,
                                 timeout=30
                             )
                             del_response.raise_for_status()
+
                             logger.info(f"Successfully deleted TXT record for {validation_name}")
                             return
-                            
+
             logger.warning(f"Could not find TXT record to delete for {validation_name}")
-            
+
         except requests.exceptions.RequestException as e:
             logger.warning(f"Error cleaning up TXT record: {e}")
